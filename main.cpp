@@ -1,27 +1,20 @@
-#include "renderer.hpp"
-#include <unistd.h>
+#include <SFML/Graphics.hpp>
 
-#include <iostream>
-
+struct Triangle{
+  
+};
 
 int main() {
-  BufferWindow c = create(60, 20, ' ');
+  sf::RenderWindow window(sf::VideoMode(600, 400), "title");
 
-  std::string message = "Hello terminal!";
-  std::string current_message = "";
-  int count = 0;
-  while (count <= static_cast<int>(message.length()) ) {
-    current_message += message[count];
-	
-    clear_window(&c, ' ');
-	draw_text(&c, 20, 10, current_message.c_str());
-    render(&c);
-  
-	sleep(1);
-    count += 1;
+
+  sf::Event event;
+  while (window.isOpen() == true) {
+    while (window.pollEvent(event)) {
+      if (event.type == sf::Event::Closed)
+        window.close();
+    }
+    window.clear();
+    window.display();
   }
-  destroy(&c);
-  
-  return 0;
 }
-
