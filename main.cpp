@@ -1,3 +1,4 @@
+#include <SFML/Graphics/PrimitiveType.hpp>
 #include <cmath>
 #include <iostream>
 #include <SFML/Graphics.hpp>
@@ -22,9 +23,8 @@ struct Mesh{
 };
 
 struct Mat4x4{
-  float m[4][4] = {0};
+  float m[4][4] = {0.f};
 };
-
 
 // 1x4 by 4x4
 Vec3 MatMul(Mat4x4 mat, Vec3 input){
@@ -45,6 +45,15 @@ void printMat4x4(const Mat4x4& mat) {
             std::cout << mat.m[row][col] << " ";
         }
         std::cout << '\n';
+    }
+}
+void printTriangle(const Triangle& tri) {
+    std::cout << "Triangle vertices:\n";
+    for (int i = 0; i < 3; i++) {
+        std::cout << "  Vertex " << i << ": ("
+                  << tri.points[i].x << ", "
+                  << tri.points[i].y << ", "
+                  << tri.points[i].z << ")\n";
     }
 }
 
@@ -69,20 +78,23 @@ Mesh create_cube_mesh(){
   
   return currentObj;
 }
-
+//
 int main() {
   sf::RenderWindow window(sf::VideoMode(600, 400), "title"); 
   sf::Event event;
+
+  float width = 600;
+  float height = 400;
 
   auto cube = create_cube_mesh();
   std::cout << cube.tri_count << std::endl;
 
   Mat4x4 projection_matrix;
-  float aspect_ratio = (float)window.getSize().y / window.getSize().x;
+  float aspect_ratio = (float)height / width;
   float fov = 90 * 0.5 / 180 * PI;
   float fov_angle = 1/tan(fov);
 
-  float zNear = 0.2f;
+  float zNear = 0.1f;
   float zFar = 1000.f;
 
   projection_matrix.m[0][0] = aspect_ratio * fov_angle;
@@ -91,25 +103,38 @@ int main() {
   projection_matrix.m[3][2] = (zFar * zNear) /  (zFar - zNear);
   projection_matrix.m[2][3] = 1; 
   
-  
-
-  // somehow loop throughout the mesh 
-  for(int i = 0; i < cube.tri_count; i++){
-
-    Triangle current_proj;
-    //MatMul(Mat4x4 mat, Vec3 input)
-
-  }
-
-
   while (window.isOpen() == true) {
     while (window.pollEvent(event)) {
       if (event.type == sf::Event::Closed)
         window.close();
     }
-    
-
     window.clear();
+    for(int i = 0; i < cube.tri_count; i++){
+      Triangle curr_tri = cube.tri_list[i];
+      Triangle proj_tri, trans_tri;
+      float translation_dist = 2.f;
+
+
+      for(int j = 0; j < 3; j++){
+        curr_tri.points[j].z += translation_dist;
+        
+
+
+        proj_tri.points[j] = MatMul(projection_matrix, curr_tri.points[j]);
+        proj_tri.points[j].x += 1.f; proj_tri.points[j].y += 1.f; 
+        proj_tri.points[j].x *= 0.5f * width; proj_tri.points[j].y *= 0.5f * height;
+      }
+      sf::Vertex lines[6] = {
+        sf::Vertex(sf::Vector2f(proj_tri.points[0].x, proj_tri.points[0].y), sf::Color::White),
+        sf::Vertex(sf::Vector2f(proj_tri.points[1].x, proj_tri.points[1].y), sf::Color::White),
+        sf::Vertex(sf::Vector2f(proj_tri.points[1].x, proj_tri.points[1].y), sf::Color::White),
+        sf::Vertex(sf::Vector2f(proj_tri.points[2].x, proj_tri.points[2].y), sf::Color::White),
+        sf::Vertex(sf::Vector2f(proj_tri.points[2].x, proj_tri.points[2].y), sf::Color::White),
+        sf::Vertex(sf::Vector2f(proj_tri.points[0].x, proj_tri.points[0].y), sf::Color::White)
+      };
+      window.draw(lines, 6, sf::Lines);
+    }
+
     window.display();
   }
 }
