@@ -1,4 +1,6 @@
 #include <SFML/Graphics/PrimitiveType.hpp>
+#include <SFML/Graphics/Vertex.hpp>
+#include <SFML/System/Time.hpp>
 #include <cmath>
 #include <iostream>
 #include <SFML/Graphics.hpp>
@@ -78,6 +80,9 @@ Mesh create_cube_mesh(){
   
   return currentObj;
 }
+
+
+
 //
 int main() {
   sf::RenderWindow window(sf::VideoMode(600, 400), "title"); 
@@ -102,24 +107,53 @@ int main() {
   projection_matrix.m[2][2] = zFar /  (zFar - zNear);
   projection_matrix.m[3][2] = (zFar * zNear) /  (zFar - zNear);
   projection_matrix.m[2][3] = 1; 
-  
+
+  Mat4x4 rotation_z;
+  Mat4x4 rotation_x;
+
+  sf::Clock clock;
+  sf::Time timer;
+  float theta = 0.f;
+
+
   while (window.isOpen() == true) {
     while (window.pollEvent(event)) {
       if (event.type == sf::Event::Closed)
         window.close();
     }
+    timer += clock.restart();
+    std::cout << theta << "  " << timer.asMilliseconds() << std::endl;
+    if(timer.asMilliseconds() > 25.f){
+      theta += 0.02;
+      timer = sf::Time::Zero;
+    }
     window.clear();
+
+    rotation_z.m[0][0] = cosf(theta);
+    rotation_z.m[0][1] = sinf(theta);
+    rotation_z.m[1][0] = -sinf(theta);
+    rotation_z.m[1][1] = cosf(theta);
+    rotation_z.m[2][2] = 1.f;
+    rotation_z.m[3][3] = 1.f;
+    
+    rotation_x.m[0][0] = 1.f;
+    rotation_x.m[1][1] = cosf(theta * 0.5f);
+    rotation_x.m[1][2] = sinf(theta * 0.5f);
+    rotation_x.m[2][1] = -sinf(theta * 0.5f);
+    rotation_x.m[2][2] = cosf(theta * 0.5f);
+    rotation_x.m[3][3] = 1.f;
+
     for(int i = 0; i < cube.tri_count; i++){
       Triangle curr_tri = cube.tri_list[i];
-      Triangle proj_tri, trans_tri;
-      float translation_dist = 2.f;
-
+      Triangle proj_tri;
+      float translation_dist = 5.f;
 
       for(int j = 0; j < 3; j++){
+        curr_tri.points[j] = MatMul(rotation_z, curr_tri.points[j]);
+        curr_tri.points[j] = MatMul(rotation_x, curr_tri.points[j]);
+        
         curr_tri.points[j].z += translation_dist;
         
-
-
         proj_tri.points[j] = MatMul(projection_matrix, curr_tri.points[j]);
         proj_tri.points[j].x += 1.f; proj_tri.points[j].y += 1.f; 
         proj_tri.points[j].x *= 0.5f * width; proj_tri.points[j].y *= 0.5f * height;
@@ -134,7 +168,6 @@ int main() {
       };
       window.draw(lines, 6, sf::Lines);
     }
-
     window.display();
   }
 }
