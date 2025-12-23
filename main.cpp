@@ -204,7 +204,7 @@ int main() {
   float width = window.getSize().x;
   float height = window.getSize().y;
 
-  std::string path = std::filesystem::current_path().string() + "//rsrc//diablo3_pose.obj";
+  std::string path = std::filesystem::current_path().string() + "//rsrc//Lagtrain.obj";
   auto cube = loadObj(path.c_str());
   std::cout << cube.tri_count << std::endl;
 
@@ -235,7 +235,6 @@ int main() {
         window.close();
     }
     timer += clock.restart();
-    std::cout << theta << "  " << timer.asMilliseconds() << std::endl;
     if (timer.asMilliseconds() > 25.f) {
       theta += 0.02;
       timer = sf::Time::Zero;
@@ -259,10 +258,10 @@ int main() {
     for (int i = 0; i < cube.tri_count; i++) {
       Triangle curr_tri = cube.tri_list[i];
       Triangle proj_tri;
-      float translation_dist = 2.f;
+      float translation_dist = 1.f;
 
       for (int j = 0; j < 3; j++) {
-        // curr_tri.points[j] = MatMul(rotation_z, curr_tri.points[j]);
+        curr_tri.points[j] = MatMul(rotation_z, curr_tri.points[j]);
         curr_tri.points[j] = MatMul(rotation_x, curr_tri.points[j]);
 
         curr_tri.points[j].z += translation_dist;
