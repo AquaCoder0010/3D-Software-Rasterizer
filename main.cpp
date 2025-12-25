@@ -132,7 +132,7 @@ int main() {
 
   // mesh information
   Mesh cube = create_cube_mesh();
-  sf::VertexArray mesh_vertex(sf::LinesStrip, cube.tri_count * 3);
+  sf::VertexArray mesh_vertex(sf::Lines, cube.tri_count * 6);
   sf::CircleShape *mesh_points = new sf::CircleShape[cube.tri_count * 3];
 
   // projection matrix init
@@ -152,9 +152,9 @@ int main() {
 
   float translation_dist = 3.f;
   float translation_y = 0.f;
-  
-  constexpr float input_update = 25.f;
-  
+
+  constexpr float input_update = 1.f;
+
   while (window.isOpen() == true) {
     while (window.pollEvent(event)) {
       if (event.type == sf::Event::Closed)
@@ -190,15 +190,14 @@ int main() {
       translation_y += 0.01;
       timer = sf::Time::Zero;
     }
-    
+
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down) &&
         timer.asMilliseconds() > input_update) {
       translation_y -= 0.01;
       timer = sf::Time::Zero;
     }
-
     update_rotation_matrix_y(rotation_y, theta);
-    
+
     int mesh_vertex_index = 0;
     for (int i = 0; i < cube.tri_count; i++) {
       Triangle curr_tri = cube.tri_list[i];
@@ -207,10 +206,14 @@ int main() {
       for (int j = 0; j < 3; j++) {
         curr_tri.points[j] = MatMul(rotation_y, curr_tri.points[j]);
 
+        // translation
         curr_tri.points[j].z += translation_dist;
+        curr_tri.points[j].y += translation_y;
+
+        // projection
         proj_tri.points[j] = MatMul(projection_matrix, curr_tri.points[j]);
 
-        // normalization
+        // normalization and conversion to screen space.
         proj_tri.points[j].x += 1.f;
         proj_tri.points[j].x *= 0.5f * width;
 
@@ -219,40 +222,34 @@ int main() {
         proj_tri.points[j].y = (1 - proj_tri.points[j].y);
         proj_tri.points[j].y *= width;
       }
-      float radius = 10.f;
-
-      for (int i = 0; i < 3; ++i) {
-        mesh_points[mesh_vertex_index + i].setRadius(radius);
-        mesh_points[mesh_vertex_index + i].setOrigin(radius, radius);
-      }
-      mesh_points[mesh_vertex_index + 0].setPosition(proj_tri.points[0].x,
-                                                     proj_tri.points[0].y);
-
-      mesh_points[mesh_vertex_index + 1].setPosition(proj_tri.points[1].x,
-                                                     proj_tri.points[1].y);
-
-      mesh_points[mesh_vertex_index + 2].setPosition(proj_tri.points[2].x,
-                                                     proj_tri.points[2].y);
-
-      mesh_vertex[mesh_vertex_index] =
+      mesh_vertex[mesh_vertex_index + 0] =
           sf::Vertex(sf::Vector2f(proj_tri.points[0].x, proj_tri.points[0].y),
                      sf::Color::White);
-
       mesh_vertex[mesh_vertex_index + 1] =
           sf::Vertex(sf::Vector2f(proj_tri.points[1].x, proj_tri.points[1].y),
                      sf::Color::White);
 
       mesh_vertex[mesh_vertex_index + 2] =
+          sf::Vertex(sf::Vector2f(proj_tri.points[1].x, proj_tri.points[1].y),
+                     sf::Color::White);
+      mesh_vertex[mesh_vertex_index + 3] =
           sf::Vertex(sf::Vector2f(proj_tri.points[2].x, proj_tri.points[2].y),
                      sf::Color::White);
 
-      mesh_vertex_index += 3;
+      mesh_vertex[mesh_vertex_index + 4] =
+          sf::Vertex(sf::Vector2f(proj_tri.points[2].x, proj_tri.points[2].y),
+                     sf::Color::White);
+      mesh_vertex[mesh_vertex_index + 5] =
+          sf::Vertex(sf::Vector2f(proj_tri.points[0].x, proj_tri.points[0].y),
+                     sf::Color::White);
+
+      mesh_vertex_index += 6;
     }
 
     window.clear();
     window.draw(mesh_vertex);
-    for (int i = 0; i < cube.tri_count * 3; i++)
-      window.draw(mesh_points[i]);
+    // for (int i = 0; i < cube.tri_count * 3; i++)
+    //   window.draw(mesh_points[i]);
     window.display();
   }
   delete_mesh(cube);
