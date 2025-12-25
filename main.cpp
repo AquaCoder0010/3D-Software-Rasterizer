@@ -149,6 +149,35 @@ Mesh load_obj(std::string filename) {
   return resultMesh;
 }
 
+void save_obj(const Mesh &mesh, std::string filename) {
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        std::cout << "Failed to save file!" << std::endl;
+        return;
+    }
+    
+    int global_v_index = 1;
+    for(int i = 0; i < mesh.tri_count; i++) {
+        for(int j = 0; j < 3; j++) {
+            file << "v " << mesh.tri_list[i].points[j].x << " " 
+                 << mesh.tri_list[i].points[j].y << " " 
+                 << mesh.tri_list[i].points[j].z << "\n";
+        }
+    }
+
+    // 2. Write faces
+    file << "\n";
+    for(int i = 0; i < mesh.tri_count; i++) {
+        file << "f " << global_v_index << " " 
+             << global_v_index + 1 << " " 
+             << global_v_index + 2 << "\n";
+        global_v_index += 3;
+    }
+    
+    file.close();
+    std::cout << "Mesh saved to " << filename << std::endl;
+}
+
 void delete_mesh(Mesh &mesh) {
   delete[] mesh.tri_list;
   mesh.tri_count = 0;
