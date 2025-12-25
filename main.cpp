@@ -1,9 +1,8 @@
 #include <SFML/Graphics.hpp>
 #include <cmath>
-#include <iostream>
 #include <filesystem>
 #include <fstream>
-
+#include <iostream>
 
 constexpr float PI = 3.141592654;
 
@@ -45,22 +44,7 @@ Vec3 MatMul(Mat4x4 mat, Vec3 input) {
                   : Vec3(output.x, output.y, output.z);
 }
 
-void printMat4x4(const Mat4x4 &mat) {
-  for (int row = 0; row < 4; row++) {
-    for (int col = 0; col < 4; col++) {
-      std::cout << mat.m[row][col] << " ";
-    }
-    std::cout << '\n';
-  }
-}
-void printTriangle(const Triangle &tri) {
-  std::cout << "Triangle vertices:\n";
-  for (int i = 0; i < 3; i++) {
-    std::cout << "  Vertex " << i << ": (" << tri.points[i].x << ", "
-              << tri.points[i].y << ", " << tri.points[i].z << ")\n";
-  }
-}
-
+// test
 Mesh create_cube_mesh() {
   Mesh currentObj;
   currentObj.tri_count = 12;
@@ -110,9 +94,6 @@ Mesh load_obj(std::string filename) {
 
   Vec3 *vertices = new Vec3[vertexCount];
   Triangle *triangles = new Triangle[faceCount];
-
-  std::vector<Vec3> temp_vertices;
-  std::vector<Triangle> temp_triangles;
 
   int v_i = 0, t_i = 0;
   std::string line;
@@ -193,6 +174,11 @@ void update_rotation_matrix_x(Mat4x4 &rotation_x, float theta) {
   rotation_x.m[3][3] = 1.f;
 }
 
+struct IndexPair{
+  int first = -1;
+  int second = -1;
+};
+
 int main() {
   sf::RenderWindow window(sf::VideoMode(1000, 1000), "title");
   window.setVerticalSyncEnabled(true);
@@ -209,7 +195,6 @@ int main() {
 
   sf::VertexArray mesh_vertex(sf::Lines, cube.tri_count * 6);
   sf::CircleShape *mesh_points = new sf::CircleShape[cube.tri_count * 3];
-  // bool *mesh_points_state = new bool[cube.tri_count * 3];
 
   // projection matrix init
   float aspect_ratio = (float)height / width;
@@ -233,59 +218,45 @@ int main() {
 
   constexpr float input_update = 1.f;
   float radius = 3.f;
+
+  IndexPair *pair_list = new IndexPair[cube.tri_count * 3];
+
   while (window.isOpen() == true) {
     while (window.pollEvent(event)) {
       if (event.type == sf::Event::Closed)
         window.close();
+      if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left){
+        sf::Vector2f mousePos = (sf::Vector2f)sf::Mouse::getPosition(window);
+
+        for(int i = 0; i < cube.tri_count * 3; i++){
+          if(mesh_points[i].getGlobalBounds().contains(mousePos)){
+
+          }
+        }
+      }
     }
     timer += clock.restart();
-
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::E) &&
-        timer.asMilliseconds() > input_update) {
-      theta += 0.01;
-      timer = sf::Time::Zero;
-    }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Q) &&
-        timer.asMilliseconds() > input_update) {
-      theta -= 0.01;
-      timer = sf::Time::Zero;
-    }
-
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::W) &&
-        timer.asMilliseconds() > input_update) {
-      translation_dist -= 0.1;
-      timer = sf::Time::Zero;
-    }
-
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::S) &&
-        timer.asMilliseconds() > input_update) {
-      translation_dist += 0.1;
+    
+    if (timer.asMilliseconds() > input_update) {
+      if (sf::Keyboard::isKeyPressed(sf::Keyboard::E))
+        theta += 0.02;
+      if (sf::Keyboard::isKeyPressed(sf::Keyboard::Q))
+        theta -= 0.02;
+      if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
+        translation_dist -= 0.1;
+      if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
+        translation_dist += 0.1;
+      if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
+        theta_2 += 0.02;
+      if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
+        theta_2 -= 0.02;
+      if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
+        translation_y += 0.1;
+      if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
+        translation_y -= 0.1;
       timer = sf::Time::Zero;
     }
 
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::A) &&
-        timer.asMilliseconds() > input_update) {
-      theta_2 += 0.1;
-      timer = sf::Time::Zero;
-    }
-
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::D) &&
-        timer.asMilliseconds() > input_update) {
-      theta_2 -= 0.1;
-      timer = sf::Time::Zero;
-    }
-
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up) &&
-        timer.asMilliseconds() > input_update) {
-      translation_y += 0.1;
-      timer = sf::Time::Zero;
-    }
-
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down) &&
-        timer.asMilliseconds() > input_update) {
-      translation_y -= 0.1;
-      timer = sf::Time::Zero;
-    }
     update_rotation_matrix_y(rotation_y, theta);
     update_rotation_matrix_x(rotation_x, theta_2 * 0.9);
 
@@ -302,7 +273,7 @@ int main() {
         // translation
         curr_tri.points[j].z += translation_dist;
         curr_tri.points[j].y += translation_y;
-        
+
         // projection
         proj_tri.points[j] = MatMul(projection_matrix, curr_tri.points[j]);
 
@@ -359,4 +330,5 @@ int main() {
   }
   delete_mesh(cube);
   delete[] mesh_points;
+  delete[] pair_list;
 }
