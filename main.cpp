@@ -1,21 +1,9 @@
-#include <SFML/Graphics/CircleShape.hpp>
-#include <SFML/Graphics/Color.hpp>
-#include <SFML/Graphics/RenderWindow.hpp>
-#include <SFML/Graphics/VertexArray.hpp>
-#include <SFML/System/Vector2.hpp>
-#include <SFML/Window/Event.hpp>
-#include <SFML/Window/Keyboard.hpp>
-#include <SFML/Window/VideoMode.hpp>
-#include <cstddef>
+#include <SFML/Graphics.hpp>
+#include <cmath>
+#include <iostream>
 #include <filesystem>
 #include <fstream>
 
-#include <SFML/Graphics.hpp>
-#include <SFML/Graphics/PrimitiveType.hpp>
-#include <SFML/Graphics/Vertex.hpp>
-#include <SFML/System/Time.hpp>
-#include <cmath>
-#include <iostream>
 
 constexpr float PI = 3.141592654;
 
