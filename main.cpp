@@ -1,4 +1,5 @@
 #include <SFML/Graphics.hpp>
+#include <SFML/System/Vector2.hpp>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
@@ -27,6 +28,17 @@ struct Mat4x4 {
   float m[4][4] = {0.f};
 };
 
+Mat4x4 Transpose(const Mat4x4 &mat) {
+    Mat4x4 out;
+    for(int i=0; i<4; i++)
+        for(int j=0; j<4; j++)
+            out.m[i][j] = mat.m[j][i];
+    return out;
+}
+
+float DistSq(float x1, float y1, float x2, float y2) {
+  return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
+}
 // 1x4 by 4x4
 Vec3 MatMul(Mat4x4 mat, Vec3 input) {
   Vec3 output;
@@ -174,7 +186,7 @@ void update_rotation_matrix_x(Mat4x4 &rotation_x, float theta) {
   rotation_x.m[3][3] = 1.f;
 }
 
-struct IndexPair{
+struct IndexPair {
   int first = -1;
   int second = -1;
 };
@@ -190,7 +202,7 @@ int main() {
 
   // mesh information
   std::string path =
-      std::filesystem::current_path().string() + "//rsrc//cube.obj";
+      std::filesystem::current_path().string() + "//rsrc//notebook.obj";
   Mesh cube = load_obj(path);
 
   sf::VertexArray mesh_vertex(sf::Lines, cube.tri_count * 6);
@@ -220,23 +232,98 @@ int main() {
   float radius = 3.f;
 
   IndexPair *pair_list = new IndexPair[cube.tri_count * 3];
+  int pair_list_total_size = 0;
+
+  bool isDragging = false;
+  sf::Vector2f prevMousePos;
 
   while (window.isOpen() == true) {
     while (window.pollEvent(event)) {
       if (event.type == sf::Event::Closed)
         window.close();
-      if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left){
-        sf::Vector2f mousePos = (sf::Vector2f)sf::Mouse::getPosition(window);
 
-        for(int i = 0; i < cube.tri_count * 3; i++){
-          if(mesh_points[i].getGlobalBounds().contains(mousePos)){
+      if (event.type == sf::Event::MouseButtonPressed &&
+          event.mouseButton.button == sf::Mouse::Left) {
+        sf::Vector2f mousePos(event.mouseButton.x, event.mouseButton.y);
+        isDragging = false;
 
+
+        int clickedIndex = -1;
+        for (int i = 0; i < cube.tri_count * 3; i++) {
+          if (mesh_points[i].getGlobalBounds().contains(mousePos)) {
+            clickedIndex = i;
+            break;
           }
         }
+
+        if (clickedIndex != -1) {
+          isDragging = true;
+          prevMousePos = (sf::Vector2f)sf::Mouse::getPosition(window);
+
+
+          int targetTriIndex = clickedIndex / 3;
+          int targetVertIndex = clickedIndex % 3;
+          Vec3 targetPos =
+              cube.tri_list[targetTriIndex].points[targetVertIndex];
+
+          int pair_list_index = 0;
+          for (int t = 0; t < cube.tri_count; t++) {
+            for (int v = 0; v < 3; v++) {
+              Vec3 p = cube.tri_list[t].points[v];
+
+              // distance calculation
+              if (DistSq(p.x, p.y, targetPos.x, targetPos.y) +
+                      DistSq(p.z, 0, targetPos.z, 0) <
+                  0.0001f) {
+                pair_list[pair_list_index].first = t;
+                pair_list[pair_list_index].second = v;
+                pair_list_index += 1;
+              }
+            }
+          }
+          pair_list_total_size = pair_list_index;
+          std::cout << pair_list_total_size << " " << pair_list_index << std::endl;
+        }
+      }
+      if (event.type == sf::Event::MouseButtonReleased &&
+          event.mouseButton.button == sf::Mouse::Left) {
+        isDragging = false;
       }
     }
     timer += clock.restart();
-    
+
+    if (isDragging && pair_list_total_size != 0) {
+      sf::Vector2f currentMousePos = (sf::Vector2f)sf::Mouse::getPosition(window);
+      float dx = (float)(currentMousePos.x - prevMousePos.x);
+      float dy = (float)(currentMousePos.y - prevMousePos.y); // Screen Y is down
+      
+      prevMousePos = currentMousePos;
+
+      // sensitivity factor
+      float sens = 0.01f;
+
+      Vec3 moveDelta = {dx * sens, -dy * sens, 0.0f};
+
+      // inverse of a rotation matrix is it's transpose.
+
+      Mat4x4 invRotX = Transpose(rotation_x);
+      Mat4x4 invRotY = Transpose(rotation_y);
+
+      Vec3 modelDelta = MatMul(invRotX, moveDelta);
+      modelDelta = MatMul(invRotY, modelDelta);
+
+      // Apply to all selected vertices
+      for (int i = 0; i < pair_list_total_size; i++) {
+        int t = pair_list[i].first;
+        int v = pair_list[i].second;
+        cube.tri_list[t].points[v].x += modelDelta.x;
+        cube.tri_list[t].points[v].y += modelDelta.y;
+        cube.tri_list[t].points[v].z += modelDelta.z;
+        std::cout << "--------------" << std::endl;
+        std::cout << t << "  " << v << std::endl;
+      }
+    }
+
     if (timer.asMilliseconds() > input_update) {
       if (sf::Keyboard::isKeyPressed(sf::Keyboard::E))
         theta += 0.02;
