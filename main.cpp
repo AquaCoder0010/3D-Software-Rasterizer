@@ -29,11 +29,11 @@ struct Mat4x4 {
 };
 
 Mat4x4 Transpose(const Mat4x4 &mat) {
-    Mat4x4 out;
-    for(int i=0; i<4; i++)
-        for(int j=0; j<4; j++)
-            out.m[i][j] = mat.m[j][i];
-    return out;
+  Mat4x4 out;
+  for (int i = 0; i < 4; i++)
+    for (int j = 0; j < 4; j++)
+      out.m[i][j] = mat.m[j][i];
+  return out;
 }
 
 float DistSq(float x1, float y1, float x2, float y2) {
@@ -150,32 +150,31 @@ Mesh load_obj(std::string filename) {
 }
 
 void save_obj(const Mesh &mesh, std::string filename) {
-    std::ofstream file(filename);
-    if (!file.is_open()) {
-        std::cout << "Failed to save file!" << std::endl;
-        return;
-    }
-    
-    int global_v_index = 1;
-    for(int i = 0; i < mesh.tri_count; i++) {
-        for(int j = 0; j < 3; j++) {
-            file << "v " << mesh.tri_list[i].points[j].x << " " 
-                 << mesh.tri_list[i].points[j].y << " " 
-                 << mesh.tri_list[i].points[j].z << "\n";
-        }
-    }
+  std::ofstream file(filename);
+  if (!file.is_open()) {
+    std::cout << "Failed to save file!" << std::endl;
+    return;
+  }
 
-    // 2. Write faces
-    file << "\n";
-    for(int i = 0; i < mesh.tri_count; i++) {
-        file << "f " << global_v_index << " " 
-             << global_v_index + 1 << " " 
-             << global_v_index + 2 << "\n";
-        global_v_index += 3;
+  int global_v_index = 1;
+  for (int i = 0; i < mesh.tri_count; i++) {
+    for (int j = 0; j < 3; j++) {
+      file << "v " << mesh.tri_list[i].points[j].x << " "
+           << mesh.tri_list[i].points[j].y << " "
+           << mesh.tri_list[i].points[j].z << "\n";
     }
-    
-    file.close();
-    std::cout << "Mesh saved to " << filename << std::endl;
+  }
+
+  // 2. Write faces
+  file << "\n";
+  for (int i = 0; i < mesh.tri_count; i++) {
+    file << "f " << global_v_index << " " << global_v_index + 1 << " "
+         << global_v_index + 2 << "\n";
+    global_v_index += 3;
+  }
+
+  file.close();
+  std::cout << "Mesh saved to " << filename << std::endl;
 }
 
 void delete_mesh(Mesh &mesh) {
@@ -276,7 +275,6 @@ int main() {
         sf::Vector2f mousePos(event.mouseButton.x, event.mouseButton.y);
         isDragging = false;
 
-
         int clickedIndex = -1;
         for (int i = 0; i < cube.tri_count * 3; i++) {
           if (mesh_points[i].getGlobalBounds().contains(mousePos)) {
@@ -288,7 +286,6 @@ int main() {
         if (clickedIndex != -1) {
           isDragging = true;
           prevMousePos = (sf::Vector2f)sf::Mouse::getPosition(window);
-
 
           int targetTriIndex = clickedIndex / 3;
           int targetVertIndex = clickedIndex % 3;
@@ -311,21 +308,31 @@ int main() {
             }
           }
           pair_list_total_size = pair_list_index;
-          std::cout << pair_list_total_size << " " << pair_list_index << std::endl;
+          std::cout << pair_list_total_size << " " << pair_list_index
+                    << std::endl;
         }
       }
       if (event.type == sf::Event::MouseButtonReleased &&
           event.mouseButton.button == sf::Mouse::Left) {
         isDragging = false;
       }
+
+      if (event.type == sf::Event::KeyPressed &&
+          event.key.code == sf::Keyboard::P) {
+        std::string filename = "output_mesh.obj";
+        save_obj(cube, filename);
+        std::cout << "Saved " << filename << " on current working directory";
+      }
     }
     timer += clock.restart();
 
     if (isDragging && pair_list_total_size != 0) {
-      sf::Vector2f currentMousePos = (sf::Vector2f)sf::Mouse::getPosition(window);
+      sf::Vector2f currentMousePos =
+          (sf::Vector2f)sf::Mouse::getPosition(window);
       float dx = (float)(currentMousePos.x - prevMousePos.x);
-      float dy = (float)(currentMousePos.y - prevMousePos.y); // Screen Y is down
-      
+      float dy =
+          (float)(currentMousePos.y - prevMousePos.y); // Screen Y is down
+
       prevMousePos = currentMousePos;
 
       // sensitivity factor
