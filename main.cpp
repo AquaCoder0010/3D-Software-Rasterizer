@@ -56,7 +56,6 @@ Vec3 MatMul(Mat4x4 mat, Vec3 input) {
                   : Vec3(output.x, output.y, output.z);
 }
 
-// test
 Mesh create_cube_mesh() {
   Mesh currentObj;
   currentObj.tri_count = 12;
@@ -182,13 +181,13 @@ void delete_mesh(Mesh &mesh) {
   mesh.tri_count = 0;
 }
 
-Mat4x4 getProjectionMatrix(float aspect_ratio, float fov, float zNear,
+Mat4x4 getProjectionMatrix(float aspect_ratio, float fov_angle, float zNear,
                            float zFar) {
   Mat4x4 projection_matrix;
-  float fov_angle = 1 / tan(fov);
+  float fov = 1 / tan(fov_angle);
 
-  projection_matrix.m[0][0] = aspect_ratio * fov_angle;
-  projection_matrix.m[1][1] = fov_angle;
+  projection_matrix.m[0][0] = aspect_ratio * fov;
+  projection_matrix.m[1][1] = fov;
   projection_matrix.m[2][2] = zFar / (zFar - zNear);
   projection_matrix.m[3][2] = (zFar * zNear) / (zFar - zNear);
   projection_matrix.m[2][3] = 1;
@@ -227,10 +226,10 @@ int main() {
 
   float width = window.getSize().x;
   float height = window.getSize().y;
-
+  
   // mesh information
   std::string path =
-      std::filesystem::current_path().string() + "//rsrc//notebook.obj";
+      std::filesystem::current_path().string() + "//rsrc//diablo3_pose.obj";
   Mesh cube = load_obj(path);
 
   sf::VertexArray mesh_vertex(sf::Lines, cube.tri_count * 6);
@@ -308,8 +307,6 @@ int main() {
             }
           }
           pair_list_total_size = pair_list_index;
-          std::cout << pair_list_total_size << " " << pair_list_index
-                    << std::endl;
         }
       }
       if (event.type == sf::Event::MouseButtonReleased &&
@@ -355,8 +352,6 @@ int main() {
         cube.tri_list[t].points[v].x += modelDelta.x;
         cube.tri_list[t].points[v].y += modelDelta.y;
         cube.tri_list[t].points[v].z += modelDelta.z;
-        std::cout << "--------------" << std::endl;
-        std::cout << t << "  " << v << std::endl;
       }
     }
 
