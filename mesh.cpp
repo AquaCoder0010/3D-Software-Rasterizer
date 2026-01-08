@@ -21,7 +21,6 @@ Mesh create_cube_mesh() {
   return currentObj;
 }
 
-
 void countObj(std::string path, int &vertexCount, int &faceCount) {
   std::ifstream file(path);
   std::string line;
@@ -42,7 +41,7 @@ Mesh load_obj(std::string filename) {
   std::ifstream file(filename);
   if (!file.is_open()) {
     std::cerr << "Error: Could not open file " << filename << std::endl;
-    std::cerr << "Returning a default Cube mesh .."  << std::endl;
+    std::cerr << "Returning a default Cube mesh .." << std::endl;
     return create_cube_mesh();
   }
   int vertexCount, faceCount;
@@ -122,6 +121,7 @@ void save_obj(const Mesh &mesh, std::string filename) {
 }
 
 void delete_mesh(Mesh &mesh) {
-  delete[] mesh.tri_list;
+  if (mesh.tri_list)
+    delete[] mesh.tri_list;
   mesh.tri_count = 0;
 }
