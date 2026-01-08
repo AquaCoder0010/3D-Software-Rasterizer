@@ -11,21 +11,21 @@ int main() {
     sf::CircleShape *mesh_points = nullptr;
     IndexPair *pair_list = nullptr;
     
-
     std::cout << "Please enter obj path directory " << std::endl;
-    std::cout << "If you want to leave the program, leave the field empty" << std::endl;
+    std::cout << "if obj file doesn't exist in current project directory, file will generate a default cube mesh\n";
+    std::cout << "If you want to leave the program, enter exit after pressing L" << std::endl;
 
     std::string relative_dir;
     std::getline(std::cin, relative_dir);
-    if (relative_dir.empty()){
+    if (relative_dir == "exit"){
       delete_mesh(mesh);
       
       if(mesh_points)
         delete[] mesh_points;
       if(pair_list)
         delete[] pair_list;
+      break;
     }
-
     // mesh information
     std::string path =
         std::filesystem::current_path().string() + "//" + relative_dir;
@@ -35,7 +35,10 @@ int main() {
     std::cout << "W/S - Move forward/back\n";
     std::cout << "A/D - Rotate X axis\n";
     std::cout << "Q/E - Rotate Y axis\n";
-    std::cout << "Arrow keys - Move vertically\n";
+    std::cout << "Arrow Up/Down - Move vertically\n";
+    std::cout << "Press L to exit and P to update the obj file\n";
+    std::cout << "Modify the vertices of the obj file by dragging it to the desired position\n";
+    
     std::cout << "Press ENTER to start...\n";
     std::cin.get();
 
