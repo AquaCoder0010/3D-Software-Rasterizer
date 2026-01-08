@@ -1,224 +1,28 @@
 #include <SFML/Graphics.hpp>
-#include <SFML/System/Vector2.hpp>
-#include <cmath>
 #include <filesystem>
-#include <fstream>
-#include <iostream>
 
-constexpr float PI = 3.141592654;
-
-struct Vec3 {
-  float x = 0, y = 0, z = 0;
-};
-
-struct Vec4 {
-  float x = 0, y = 0, z = 0, w = 0;
-};
-
-struct Triangle {
-  Vec3 points[3];
-};
-
-struct Mesh {
-  Triangle *tri_list = nullptr;
-  int tri_count = 0;
-};
-
-struct Mat4x4 {
-  float m[4][4] = {0.f};
-};
-
-Mat4x4 Transpose(const Mat4x4 &mat) {
-  Mat4x4 out;
-  for (int i = 0; i < 4; i++)
-    for (int j = 0; j < 4; j++)
-      out.m[i][j] = mat.m[j][i];
-  return out;
-}
-
-float DistSq(float x1, float y1, float x2, float y2) {
-  return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
-}
-// 1x4 by 4x4
-Vec3 MatMul(Mat4x4 mat, Vec3 input) {
-  Vec3 output;
-
-  output.x = mat.m[0][0] * input.x + mat.m[1][0] * input.y +
-             mat.m[2][0] * input.z + mat.m[3][0];
-  output.y = mat.m[0][1] * input.x + mat.m[1][1] * input.y +
-             mat.m[2][1] * input.z + mat.m[3][1];
-  output.z = mat.m[0][2] * input.x + mat.m[1][2] * input.y +
-             mat.m[2][2] * input.z + mat.m[3][2];
-  float w = mat.m[0][3] * input.x + mat.m[1][3] * input.y +
-            mat.m[2][3] * input.z + mat.m[3][3];
-
-  return w != 0.f ? Vec3(output.x / w, output.y / w, output.z / w)
-                  : Vec3(output.x, output.y, output.z);
-}
-
-Mesh create_cube_mesh() {
-  Mesh currentObj;
-  currentObj.tri_count = 12;
-  currentObj.tri_list = new Triangle[currentObj.tri_count];
-
-  currentObj.tri_list[0] = {{{0, 0, 0}, {0, 1, 0}, {1, 1, 0}}};
-  currentObj.tri_list[1] = {{{0, 0, 0}, {1, 1, 0}, {1, 0, 0}}};
-  currentObj.tri_list[2] = {{{1, 0, 0}, {1, 1, 0}, {1, 1, 1}}};
-  currentObj.tri_list[3] = {{{1, 0, 0}, {1, 1, 1}, {1, 0, 1}}};
-  currentObj.tri_list[4] = {{{1, 0, 1}, {1, 1, 1}, {0, 1, 1}}};
-  currentObj.tri_list[5] = {{{1, 0, 1}, {0, 1, 1}, {0, 0, 1}}};
-  currentObj.tri_list[6] = {{{0, 0, 1}, {0, 1, 1}, {0, 1, 0}}};
-  currentObj.tri_list[7] = {{{0, 0, 1}, {0, 1, 0}, {0, 0, 0}}};
-  currentObj.tri_list[8] = {{{0, 1, 0}, {0, 1, 1}, {1, 1, 1}}};
-  currentObj.tri_list[9] = {{{0, 1, 0}, {1, 1, 1}, {1, 1, 0}}};
-  currentObj.tri_list[10] = {{{1, 0, 1}, {0, 0, 1}, {0, 0, 0}}};
-  currentObj.tri_list[11] = {{{1, 0, 1}, {0, 0, 0}, {1, 0, 0}}};
-
-  return currentObj;
-}
-
-void countObj(std::string path, int &vertexCount, int &faceCount) {
-  std::ifstream file(path);
-  std::string line;
-
-  vertexCount = 0;
-  faceCount = 0;
-
-  while (std::getline(file, line)) {
-    if (line[0] == 'v' && line[1] == ' ')
-      vertexCount++;
-    else if (line[0] == 'f' && line[1] == ' ')
-      faceCount++;
-  }
-  file.close();
-}
-
-Mesh load_obj(std::string filename) {
-  std::ifstream file(filename);
-  if (!file.is_open()) {
-    std::cerr << "Error: Could not open file " << filename << std::endl;
-    Mesh empty_mesh;
-    return empty_mesh;
-  }
-  int vertexCount, faceCount;
-  countObj(filename, vertexCount, faceCount);
-
-  Vec3 *vertices = new Vec3[vertexCount];
-  Triangle *triangles = new Triangle[faceCount];
-
-  int v_i = 0, t_i = 0;
-  std::string line;
-  while (std::getline(file, line)) {
-    std::stringstream ss(line);
-    std::string prefix;
-    ss >> prefix;
-
-    if (line[0] == 'v' && line[1] == ' ') {
-      Vec3 v;
-      ss >> v.x >> v.y >> v.z;
-
-      vertices[v_i] = v;
-      v_i++;
-    }
-
-    else if (prefix == "f") {
-      int vertexIndex[3];
-      for (int i = 0; i < 3; i++) {
-        std::string vertexData;
-        ss >> vertexData;
-        vertexIndex[i] = std::stoi(vertexData) - 1;
-      }
-      Triangle newTri;
-      newTri.points[0] = vertices[vertexIndex[0]];
-      newTri.points[1] = vertices[vertexIndex[1]];
-      newTri.points[2] = vertices[vertexIndex[2]];
-
-      triangles[t_i] = newTri;
-      t_i++;
-    }
-  }
-
-  Mesh resultMesh;
-  resultMesh.tri_count = faceCount;
-  resultMesh.tri_list = new Triangle[resultMesh.tri_count];
-
-  for (int i = 0; i < resultMesh.tri_count; i++) {
-    resultMesh.tri_list[i] = triangles[i];
-  }
-  return resultMesh;
-}
-
-void save_obj(const Mesh &mesh, std::string filename) {
-  std::ofstream file(filename);
-  if (!file.is_open()) {
-    std::cout << "Failed to save file!" << std::endl;
-    return;
-  }
-
-  int global_v_index = 1;
-  for (int i = 0; i < mesh.tri_count; i++) {
-    for (int j = 0; j < 3; j++) {
-      file << "v " << mesh.tri_list[i].points[j].x << " "
-           << mesh.tri_list[i].points[j].y << " "
-           << mesh.tri_list[i].points[j].z << "\n";
-    }
-  }
-
-  // 2. Write faces
-  file << "\n";
-  for (int i = 0; i < mesh.tri_count; i++) {
-    file << "f " << global_v_index << " " << global_v_index + 1 << " "
-         << global_v_index + 2 << "\n";
-    global_v_index += 3;
-  }
-
-  file.close();
-  std::cout << "Mesh saved to " << filename << std::endl;
-}
-
-void delete_mesh(Mesh &mesh) {
-  delete[] mesh.tri_list;
-  mesh.tri_count = 0;
-}
-
-Mat4x4 getProjectionMatrix(float aspect_ratio, float fov_angle, float zNear,
-                           float zFar) {
-  Mat4x4 projection_matrix;
-  float fov = 1 / tan(fov_angle);
-
-  projection_matrix.m[0][0] = aspect_ratio * fov;
-  projection_matrix.m[1][1] = fov;
-  projection_matrix.m[2][2] = zFar / (zFar - zNear);
-  projection_matrix.m[3][2] = (zFar * zNear) / (zFar - zNear);
-  projection_matrix.m[2][3] = 1;
-
-  return projection_matrix;
-}
-
-void update_rotation_matrix_y(Mat4x4 &rotation_y, float theta) {
-  rotation_y.m[0][0] = cosf(theta);
-  rotation_y.m[0][2] = -sinf(theta);
-  rotation_y.m[1][1] = 1.f;
-  rotation_y.m[2][0] = sinf(theta);
-  rotation_y.m[2][2] = cosf(theta);
-  rotation_y.m[3][3] = 1.f;
-}
-
-void update_rotation_matrix_x(Mat4x4 &rotation_x, float theta) {
-  rotation_x.m[0][0] = 1.f;
-  rotation_x.m[1][1] = cosf(theta * 0.5f);
-  rotation_x.m[1][2] = sinf(theta * 0.5f);
-  rotation_x.m[2][1] = -sinf(theta * 0.5f);
-  rotation_x.m[2][2] = cosf(theta * 0.5f);
-  rotation_x.m[3][3] = 1.f;
-}
-
-struct IndexPair {
-  int first = -1;
-  int second = -1;
-};
+#include "matrix.hpp"
+#include "mesh.hpp"
+#include "ops.hpp"
 
 int main() {
+  std::cout << "Please enter obj path directory " << std::endl;
+  std::string relative_dir;
+  std::getline(std::cin, relative_dir);
+
+  // mesh information
+  std::string path =
+      std::filesystem::current_path().string() + "//" + relative_dir;
+  Mesh cube = load_obj(path);
+
+  std::cout << "Controls:\n";
+  std::cout << "W/S - Move forward/back\n";
+  std::cout << "A/D - Rotate X axis\n";
+  std::cout << "Q/E - Rotate Y axis\n";
+  std::cout << "Arrow keys - Move vertically\n";
+  std::cout << "Press ENTER to start...\n";
+  std::cin.get();
+  
   sf::RenderWindow window(sf::VideoMode(1000, 1000), "title");
   window.setVerticalSyncEnabled(true);
 
@@ -226,16 +30,13 @@ int main() {
 
   float width = window.getSize().x;
   float height = window.getSize().y;
-  
-  // mesh information
-  std::string path =
-      std::filesystem::current_path().string() + "//rsrc//diablo3_pose.obj";
-  Mesh cube = load_obj(path);
 
+  // objects for view
   sf::VertexArray mesh_vertex(sf::Lines, cube.tri_count * 6);
   sf::CircleShape *mesh_points = new sf::CircleShape[cube.tri_count * 3];
+  float radius = 3.f;
 
-  // projection matrix init
+  // projection matrix parameters
   float aspect_ratio = (float)height / width;
   float fov = 90 * 0.5 / 180 * PI;
   float zNear = 0.1f;
@@ -246,8 +47,9 @@ int main() {
   // rotation matrix
   Mat4x4 rotation_y;
   Mat4x4 rotation_x;
-  float theta = 0.f;
-  float theta_2 = 0.f;
+
+  float theta_y = 0.f;
+  float theta_x = 0.f;
 
   sf::Clock clock;
   sf::Time timer;
@@ -256,7 +58,6 @@ int main() {
   float translation_y = 0.f;
 
   constexpr float input_update = 1.f;
-  float radius = 3.f;
 
   IndexPair *pair_list = new IndexPair[cube.tri_count * 3];
   int pair_list_total_size = 0;
@@ -355,19 +156,20 @@ int main() {
       }
     }
 
+    // keyboard logic
     if (timer.asMilliseconds() > input_update) {
       if (sf::Keyboard::isKeyPressed(sf::Keyboard::E))
-        theta += 0.02;
+        theta_y += 0.02;
       if (sf::Keyboard::isKeyPressed(sf::Keyboard::Q))
-        theta -= 0.02;
+        theta_y -= 0.02;
       if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
         translation_dist -= 0.1;
       if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
         translation_dist += 0.1;
       if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
-        theta_2 += 0.02;
+        theta_x += 0.02;
       if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
-        theta_2 -= 0.02;
+        theta_x -= 0.02;
       if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
         translation_y += 0.1;
       if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
@@ -375,8 +177,9 @@ int main() {
       timer = sf::Time::Zero;
     }
 
-    update_rotation_matrix_y(rotation_y, theta);
-    update_rotation_matrix_x(rotation_x, theta_2 * 0.9);
+    update_rotation_matrix_y(rotation_y, theta_y);
+    // multiply by 0.9 to avoid gimbal lock
+    update_rotation_matrix_x(rotation_x, theta_x * 0.9);
 
     int line_index = 0;
     int point_index = 0;
@@ -385,6 +188,7 @@ int main() {
       Triangle proj_tri;
 
       for (int j = 0; j < 3; j++) {
+        // 3D space rotation
         curr_tri.points[j] = MatMul(rotation_y, curr_tri.points[j]);
         curr_tri.points[j] = MatMul(rotation_x, curr_tri.points[j]);
 
@@ -399,6 +203,8 @@ int main() {
         proj_tri.points[j].x += 1.f;
         proj_tri.points[j].x *= 0.5f * width;
 
+        // we use the formula 1 - (c + 1)*0.5 because SFML uses a matrix
+        // coordinate space (Y increases to the left)
         proj_tri.points[j].y += 1.f;
         proj_tri.points[j].y *= 0.5f;
         proj_tri.points[j].y = (1 - proj_tri.points[j].y);
@@ -408,13 +214,9 @@ int main() {
       for (int i = 0; i < 3; ++i) {
         mesh_points[point_index + i].setRadius(radius);
         mesh_points[point_index + i].setOrigin(radius, radius);
+        mesh_points[point_index + i].setPosition(proj_tri.points[i].x,
+                                                 proj_tri.points[i].y);
       }
-      mesh_points[point_index + 0].setPosition(proj_tri.points[0].x,
-                                               proj_tri.points[0].y);
-      mesh_points[point_index + 1].setPosition(proj_tri.points[1].x,
-                                               proj_tri.points[1].y);
-      mesh_points[point_index + 2].setPosition(proj_tri.points[2].x,
-                                               proj_tri.points[2].y);
       point_index += 3;
 
       mesh_vertex[line_index + 0] =
