@@ -1,4 +1,5 @@
 #include <SFML/Graphics.hpp>
+#include <SFML/Window/WindowStyle.hpp>
 #include <filesystem>
 
 #include "matrix.hpp"
@@ -22,8 +23,8 @@ int main() {
   std::cout << "Arrow keys - Move vertically\n";
   std::cout << "Press ENTER to start...\n";
   std::cin.get();
-  
-  sf::RenderWindow window(sf::VideoMode(1000, 1000), "title");
+
+  sf::RenderWindow window(sf::VideoMode(800, 600), "title", sf::Style::Default);
   window.setVerticalSyncEnabled(true);
 
   sf::Event event;
